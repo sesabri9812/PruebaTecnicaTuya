@@ -1,0 +1,17 @@
+[
+  {
+    "customer_id": "1",
+    "phone": "300-123-4567",
+    "source": "crm"
+  },
+  {
+    "customer_id": "2",
+    "phone": "+57 301 999 8888",
+    "source": "web"
+  },
+  {
+    "customer_id": "3",
+    "phone": "invalid_phone",
+    "source": "callcenter"
+  }
+]
