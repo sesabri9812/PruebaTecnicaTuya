@@ -1,41 +1,37 @@
-from __future__ import annotations
+from airflow import DAG
+from airflow.operators.python import PythonOperator
+from datetime import datetime
 
-try:
-    from airflow import DAG
-    from airflow.operators.python import PythonOperator
-except ImportError:  # pragma: no cover
-    DAG = None
-    PythonOperator = None
-
-from phone_pipeline.curated.gold import run_gold_pipeline
-from phone_pipeline.data_quality.quality_runner import run_bronze_quality_checks
-from phone_pipeline.processing.silver import build_silver_dataset
+from phone_pipeline.processing.gold import run_gold_pipeline
 
 
-def create_phone_pipeline_dag():
-    if DAG is None or PythonOperator is None:
-        return None
+def execute_gold():
+    result = run_gold_pipeline()
 
-    with DAG(
-        dag_id="phone_pipeline",
-        schedule="@daily",
-        catchup=False,
-    ) as dag:
-        quality_task = PythonOperator(
-            task_id="run_bronze_quality_checks",
-            python_callable=run_bronze_quality_checks,
-        )
-        silver_task = PythonOperator(
-            task_id="build_silver_dataset",
-            python_callable=build_silver_dataset,
-        )
-        gold_task = PythonOperator(
-            task_id="run_gold_pipeline",
-            python_callable=run_gold_pipeline,
-        )
+    print("=== TABLE ===")
+    print(result["table"][:5])
 
-        quality_task >> silver_task >> gold_task
-        return dag
+    print("=== METRICS ===")
+    print(result["metrics"])
 
 
-dag = create_phone_pipeline_dag()
+default_args = {
+    "owner": "data-engineer",
+    "retries": 1,
+}
+
+with DAG(
+    dag_id="gold_phone_pipeline",
+    default_args=default_args,
+    description="Pipeline GOLD de teléfonos",
+    schedule_interval="@daily",
+    start_date=datetime(2024, 1, 1),
+    catchup=False,
+) as dag:
+
+    run_gold_task = PythonOperator(
+        task_id="run_gold_pipeline",
+        python_callable=execute_gold,
+    )
+
+    run_gold_task
